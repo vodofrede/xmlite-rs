@@ -45,7 +45,8 @@ pub struct Element<'a> {
     /// The text contained within the element, if any.
     pub text: &'a str,
     attrs: HashMap<&'a str, &'a str>,
-    children: Vec<Element<'a>>,
+    /// The element's child elements.
+    pub children: Vec<Element<'a>>,
 }
 impl<'a> Element<'a> {
     /// Get the value of an attribute.
@@ -59,20 +60,20 @@ impl<'a> Element<'a> {
     pub fn attr(&self, key: &str) -> Option<&str> {
         self.attrs.get(key).cloned()
     }
-    /// Iterate over child elements.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let element = xml::parse(r#"<a> <b></b> <c></c> </a>"#).unwrap().root;
-    /// let mut children = element.children();
-    /// assert_eq!(children.next().unwrap().name, "b"),
-    /// assert_eq!(children.next().unwrap().name, "c"),
-    /// assert_eq!(children.next(), None),
-    /// ```
-    pub fn children(&self) -> impl Iterator<Item = &Element> {
-        self.children.iter()
-    }
+    //    /// Iterate over child elements.
+    //    ///
+    //    /// # Examples
+    //    ///
+    //    /// ```
+    //    /// let element = xml::parse(r#"<a> <b></b> <c></c> </a>"#).unwrap().root;
+    //    /// let mut children = element.children();
+    //    /// assert_eq!(children.next().unwrap().name, "b"),
+    //    /// assert_eq!(children.next().unwrap().name, "c"),
+    //    /// assert_eq!(children.next(), None),
+    //    /// ```
+    //    pub fn children(&self) -> impl Iterator<Item = &Element> {
+    //        self.children.iter()
+    //    }
 }
 #[derive(Debug, Clone)]
 struct Tag<'a> {
@@ -87,7 +88,7 @@ struct Tag<'a> {
 fn element(src: &str) -> Result<(&str, Element), &'static str> {
     let src = src.trim_start();
     let (src, start) = tag(src)?;
-    let (src, text, children) = match tag(src.trim_start()) {
+    let (src, text, children) = match tag(src) {
         _ if start.closing => {
             (src, "", vec![]) // self-closing
         }
@@ -98,13 +99,11 @@ fn element(src: &str) -> Result<(&str, Element), &'static str> {
             // child elements
             let mut src = src;
             let mut children = vec![];
-            loop {
-                let (new_src, child) = match (next.closing, next.name == start.name) {
+            loop {                let (new_src, child) = match (next.closing, next.name == start.name) {
                     (true, true) => break (src, "", children),
-                    (true, false) => return Err("mismatched closing tag"),
                     _ => element(src)?,
                 };
-                debug_assert!(src != new_src);
+                assert!(new_src != src);
                 src = new_src;
                 children.push(child);
                 (_, next) = tag(src)?;
@@ -131,13 +130,17 @@ fn element(src: &str) -> Result<(&str, Element), &'static str> {
 }
 /// Parse a single XML tag.
 fn tag(src: &str) -> Result<(&str, Tag), &'static str> {
-    let (src, open) = eat(src, &["</", "<?", "<!", "<"]).ok_or("failed to find open bracket")?;
-    if open == "<?" {
-        return tag(pi(src)?);
+
+    let (src, open) = eat(src.trim_start(), &["<!--", "</", "<?", "<"]).ok_or("failed to find open bracket")?;
+    match open {
+        "<!--" => return tag(comment(src)?),
+        "<?" => return tag(pi(src)?),
+        _ => {}
     }
+
     let (src, name) = scan(src, name_pattern);
 
-    let mut closing = open == "</" || open == "<?";
+    let mut closing = open == "</";
     let mut attrs = HashMap::new();
     let mut src = src;
     let src = loop {
@@ -164,9 +167,6 @@ fn tag(src: &str) -> Result<(&str, Tag), &'static str> {
     };
     Ok((&src, tag))
 }
-fn pi(src: &str) -> Result<&str, &'static str> {
-    Ok(&src[2 + src.find("?>").ok_or("unclosed processing instruction")?..])
-}
 
 /// Parse a single attribute that may have a value.
 fn attr(src: &str) -> Option<(&str, (&str, &str))> {
@@ -190,10 +190,16 @@ fn scan(s: &str, p: impl Fn(char) -> bool) -> (&str, &str) {
     (&s[part.len()..], part)
 }
 fn name_pattern(c: char) -> bool {
-    c.is_alphanumeric() || "_-:?!".contains(c)
+    c.is_alphanumeric() || "_-:".contains(c)
 }
 fn quote(s: &str) -> Option<(&str, &str)> {
     s[1..].find('"').map(|i| (&s[(i + 2)..], &s[1..(i + 1)]))
+}
+fn pi(src: &str) -> Result<&str, &'static str> {
+    Ok(&src[2 + src.find("?>").ok_or("unclosed processing instruction")?..])
+}
+fn comment(src: &str) -> Result<&str, &'static str> {
+    Ok(&src[3 + src.find("-->").ok_or("unclosed processing instruction")?..])
 }
 
 #[cfg(test)]
@@ -276,5 +282,19 @@ mod tests {
         let (_, tag) = tag(text).unwrap();
         assert_eq!(tag.name, "a");
         assert_eq!(tag.closing, true);
+    }
+
+    #[test]
+    fn multi_line_input() {
+        let text = r#"<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="wayland">"#;
+        let xml = parse(text);
+    }
+
+    #[test]
+    fn with_comment() {
+        let text = r#"<!-- start --> <a> <!-- middle --> </a>"#;
+        let (_, element) = element(text).unwrap();
+        assert_eq!(element.name, "a");
     }
 }

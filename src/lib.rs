@@ -99,7 +99,8 @@ fn element(src: &str) -> Result<(&str, Element), &'static str> {
             // child elements
             let mut src = src;
             let mut children = vec![];
-            loop {                let (new_src, child) = match (next.closing, next.name == start.name) {
+            loop {
+                let (new_src, child) = match (next.closing, next.name == start.name) {
                     (true, true) => break (src, "", children),
                     _ => element(src)?,
                 };
@@ -287,8 +288,10 @@ mod tests {
     #[test]
     fn multi_line_input() {
         let text = r#"<?xml version="1.0" encoding="UTF-8"?>
-<protocol name="wayland">"#;
-        let xml = parse(text);
+<protocol name="wayland"></protocol>"#;
+        let xml = parse(text).unwrap();
+        assert_eq!(xml.root.name, "protocol");
+        assert_eq!(xml.root.attr("name"), Some("wayland"));
     }
 
     #[test]

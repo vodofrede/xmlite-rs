@@ -17,3 +17,13 @@ assert_eq!(xml.root.children[0].attr("kind"), Some("fava"));
 This library is not 1.0 yet, and might be missing some features (I don't know which ones). Needs a once-over with the
 specification in hand.
 
+Specifically missing (for now) is support for:
+
+- Spans for errors
+- CDATA sections
+- Namespaces
+- Numeric character references
+- '\&amp;', '\&lt;' and '\&gt'
+- Reading PIs (currently ignored)
+- Reading comments (currently ignored)
+- XML version & encoding

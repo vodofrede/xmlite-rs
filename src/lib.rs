@@ -24,12 +24,13 @@ pub fn parse(src: &str) -> Result<Xml, &'static str> {
         root: element(src)?.1,
     })
 }
+
 /// The root XML document.
 ///
 /// This struct doesn't do much on it's own. To work with it, get the root element [`Xml::root`] and use the fields and methods on [`Element`].
 #[derive(Debug, Clone)]
 pub struct Xml<'a> {
-    /// The root element.
+    /// Root element.
     pub root: Element<'a>,
 }
 
@@ -37,20 +38,19 @@ pub struct Xml<'a> {
 ///
 /// Get their tag name from [`Element::name`] or their text content from [`Element::text`]. \
 /// Attributes are retrieved using [`Element::attr`]. \
-/// Iterator over sub-elements (children) using [`Element::children`].
+/// Iterate over sub-elements (children) using [`Element::iter`].
 #[derive(Debug, Clone, PartialEq)]
 pub struct Element<'a> {
-    /// The tag name belonging to this element.
+    /// Tag name belonging to this element.
     pub name: &'a str,
-    /// The text contained within the element, if any.
+    /// Text contained within the element, if any.
     pub text: &'a str,
-    /// The key-value pairs of attributes.
+    /// Key-value pairs of attributes.
     pub attrs: HashMap<&'a str, &'a str>,
-    /// The element's child elements.
+    /// Element's child elements.
     pub children: Vec<Element<'a>>,
 }
 impl<'a> Element<'a> {
-    // attribute access
     /// Get the value of an attribute.
     ///
     /// # Examples
@@ -65,15 +65,17 @@ impl<'a> Element<'a> {
 
     /// Iterate over elements contained in this element, including itself.
     ///
+    /// Elements are accessed in order, depth-first style.
+    ///
     /// # Examples
     ///
     /// ```
-    /// let xml = xml::parse("<a> <b></b> <c> <d></d> </c> </a>").unwrap();
+    /// let xml = xml::parse("<a> <b> <d></d> </b> <c></c> </a>").unwrap();
     /// let mut elements = xml.root.iter();
     /// assert_eq!(elements.next().unwrap().name, "a");
     /// assert_eq!(elements.next().unwrap().name, "b");
-    /// assert_eq!(elements.next().unwrap().name, "c");
     /// assert_eq!(elements.next().unwrap().name, "d");
+    /// assert_eq!(elements.next().unwrap().name, "c");
     /// assert_eq!(elements.next(), None);
     /// ```
     pub fn iter(&self) -> Elements {
@@ -122,12 +124,12 @@ fn element(src: &str) -> Result<(&str, Element), &'static str> {
             let mut next_src = src;
             let mut children = vec![];
             loop {
-                let (new, child) = match (next.closing, next.name == start.name) {
-                    (true, true) => break (next_src, "", children),
-                    _ => element(src)?,
-                };
-                assert!(new != src);
-                src = new;
+                if next.closing && next.name == start.name {
+                    break (next_src, "", children);
+                }
+                let (new_src, child) = element(src)?;
+                debug_assert!(new_src != src);
+                src = new_src;
                 children.push(child);
                 (next_src, next) = tag(src)?;
             }
@@ -202,7 +204,9 @@ fn attr(src: &str) -> Option<(&str, (&str, &str))> {
         .unwrap_or((src, ""));
     Some((src, (name, value)))
 }
-
+/// Eat text from the front of the string.
+///
+/// Returns (str without part, part), where part is the matching string from `ps`, or None if no matches were found.
 fn eat<'a>(s: &'a str, ps: &[&str]) -> Option<(&'a str, &'a str)> {
     ps.iter()
         .find(|p| s.starts_with(**p))

@@ -38,17 +38,19 @@ pub struct Xml<'a> {
 /// Get their tag name from [`Element::name`] or their text content from [`Element::text`]. \
 /// Attributes are retrieved using [`Element::attr`]. \
 /// Iterator over sub-elements (children) using [`Element::children`].
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Element<'a> {
     /// The tag name belonging to this element.
     pub name: &'a str,
     /// The text contained within the element, if any.
     pub text: &'a str,
-    attrs: HashMap<&'a str, &'a str>,
+    /// The key-value pairs of attributes.
+    pub attrs: HashMap<&'a str, &'a str>,
     /// The element's child elements.
     pub children: Vec<Element<'a>>,
 }
 impl<'a> Element<'a> {
+    // attribute access
     /// Get the value of an attribute.
     ///
     /// # Examples
@@ -60,21 +62,40 @@ impl<'a> Element<'a> {
     pub fn attr(&self, key: &str) -> Option<&str> {
         self.attrs.get(key).cloned()
     }
-    //    /// Iterate over child elements.
-    //    ///
-    //    /// # Examples
-    //    ///
-    //    /// ```
-    //    /// let element = xml::parse(r#"<a> <b></b> <c></c> </a>"#).unwrap().root;
-    //    /// let mut children = element.children();
-    //    /// assert_eq!(children.next().unwrap().name, "b"),
-    //    /// assert_eq!(children.next().unwrap().name, "c"),
-    //    /// assert_eq!(children.next(), None),
-    //    /// ```
-    //    pub fn children(&self) -> impl Iterator<Item = &Element> {
-    //        self.children.iter()
-    //    }
+
+    /// Iterate over elements contained in this element, including itself.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let xml = xml::parse("<a> <b></b> <c> <d></d> </c> </a>").unwrap();
+    /// let mut elements = xml.root.iter();
+    /// assert_eq!(elements.next().unwrap().name, "a");
+    /// assert_eq!(elements.next().unwrap().name, "b");
+    /// assert_eq!(elements.next().unwrap().name, "c");
+    /// assert_eq!(elements.next().unwrap().name, "d");
+    /// assert_eq!(elements.next(), None);
+    /// ```
+    pub fn iter(&self) -> Elements {
+        Elements { stack: vec![self] }
+    }
 }
+
+/// Iterator over elements.
+#[derive(Debug, Clone)]
+pub struct Elements<'a> {
+    stack: Vec<&'a Element<'a>>,
+}
+impl<'a> Iterator for Elements<'a> {
+    type Item = &'a Element<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current = self.stack.pop()?;
+        self.stack.extend(current.children.iter().rev());
+        Some(current)
+    }
+}
+
 #[derive(Debug, Clone)]
 struct Tag<'a> {
     name: &'a str,
@@ -98,16 +119,17 @@ fn element(src: &str) -> Result<(&str, Element), &'static str> {
         Ok((_, mut next)) => {
             // child elements
             let mut src = src;
+            let mut next_src = src;
             let mut children = vec![];
             loop {
-                let (new_src, child) = match (next.closing, next.name == start.name) {
-                    (true, true) => break (src, "", children),
+                let (new, child) = match (next.closing, next.name == start.name) {
+                    (true, true) => break (next_src, "", children),
                     _ => element(src)?,
                 };
-                assert!(new_src != src);
-                src = new_src;
+                assert!(new != src);
+                src = new;
                 children.push(child);
-                (_, next) = tag(src)?;
+                (next_src, next) = tag(src)?;
             }
         }
         Err(_) => {
@@ -131,8 +153,8 @@ fn element(src: &str) -> Result<(&str, Element), &'static str> {
 }
 /// Parse a single XML tag.
 fn tag(src: &str) -> Result<(&str, Tag), &'static str> {
-
-    let (src, open) = eat(src.trim_start(), &["<!--", "</", "<?", "<"]).ok_or("failed to find open bracket")?;
+    let (src, open) =
+        eat(src.trim_start(), &["<!--", "</", "<?", "<"]).ok_or("failed to find open bracket")?;
     match open {
         "<!--" => return tag(comment(src)?),
         "<?" => return tag(pi(src)?),
@@ -299,5 +321,14 @@ mod tests {
         let text = r#"<!-- start --> <a> <!-- middle --> </a>"#;
         let (_, element) = element(text).unwrap();
         assert_eq!(element.name, "a");
+    }
+
+    #[test]
+    fn correct_number_of_elements() {
+        let xml = parse("<a> <b></b> <c> <d></d> </c> </a>").unwrap();
+        assert_eq!(
+            xml.root.children.iter().map(|c| c.name).collect::<Vec<_>>(),
+            &["b", "c"]
+        );
     }
 }

@@ -29,7 +29,7 @@ use std::{borrow::Cow, collections::HashMap, error, fmt, iter, slice};
 ///
 /// ```
 /// let text = r#"<?xml ?><can><beans kind="fava">Cool Beans</beans><sauce></sauce></can>"#;
-/// let xml = xml::parse(text).expect("failed to parse as xml");
+/// let xml = xmlite::parse(text).expect("failed to parse as xml");
 /// assert_eq!(xml.name(), Some("can"));
 /// assert_eq!(xml.children().next().unwrap().name(), Some("beans"));
 /// assert_eq!(xml.children().next().unwrap().attr("kind"), Some("fava"));
@@ -59,7 +59,7 @@ impl<'a> Xml<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use xml::Xml;
+    /// # use xmlite::Xml;
     /// let node = Xml::text("hello");
     /// assert_eq!(node.content(), Some("hello"));
     /// ```
@@ -72,7 +72,7 @@ impl<'a> Xml<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use xml::Xml;
+    /// # use xmlite::Xml;
     /// let node = Xml::element("div");
     /// assert_eq!(node.name(), Some("div"));
     /// ```
@@ -123,7 +123,7 @@ impl<'a> Xml<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use xml::Xml;
+    /// # use xmlite::Xml;
     /// let element = Xml::element("div")
     ///     .with_attr("id", "main")
     ///     .with_attr("class", "container");
@@ -147,7 +147,7 @@ impl<'a> Xml<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use xml::Xml;
+    /// # use xmlite::Xml;
     /// let element = Xml::element("div")
     ///     .with_child(Xml::text("Hello, world!"));
     ///
@@ -166,8 +166,8 @@ impl<'a> Xml<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use xml::Xml;
-    /// let xml = xml::parse("<a><b></b><c></c></a>").unwrap();
+    /// # use xmlite::Xml;
+    /// let xml = xmlite::parse("<a><b></b><c></c></a>").unwrap();
     /// let child = xml.children().find(|e| e.name() == Some("c"));
     /// assert_eq!(child, Some(&Xml::element("c")));
     /// ```

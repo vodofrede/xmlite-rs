@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "xml"
+name = "xmlite"
 version = "0.2.0"

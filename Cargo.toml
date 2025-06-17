@@ -7,7 +7,7 @@ description = "a light-weight, read-write XML parser."
 homepage = "https://github.com/vodofrede/xmlite-rs"
 repository = "https://github.com/vodofrede/xmlite-rs"
 readme = "readme.md"
-license-file = "license.txt"
+license = "AGPL-3.0-or-later"
 keywords = ["xml", "parser", "rust"]
 categories = ["parsing"]
 

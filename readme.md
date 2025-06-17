@@ -12,6 +12,8 @@ assert_eq!(xml.children().next().unwrap().name(), Some("beans"));
 assert_eq!(xml.children().next().unwrap().attr("kind"), Some("fava"));
 ```
 
+See the [documentation]() for more usage instructions.
+
 ## Limitations
 
 This library is not 1.0 yet, and might be missing some features (I don't know which ones). Needs a once-over with the
@@ -30,4 +32,4 @@ Specifically missing (for now) is support for:
 
 ## License
 
-This project is licensed under the AGPL. See [`license.md`] for more information.
+This project is licensed under the AGPL. See [`license.txt`](license.txt) for more information.

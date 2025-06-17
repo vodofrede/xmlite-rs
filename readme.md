@@ -5,7 +5,7 @@ An XML 1.0 document parser implementation for Rust.
 ## Usage
 
 ```rust
-let text = r#"<?xml ?><can><beans kind="fava">Cool Beans</beans><sauce></sauce></can>"#;
+let text = r#"<?xml?><can><beans kind="fava">Cool Beans</beans><sauce></sauce></can>"#;
 let xml = xml::parse(text).expect("failed to parse as xml");
 assert_eq!(xml.name(), Some("can"));
 assert_eq!(xml.children().next().unwrap().name(), Some("beans"));
@@ -27,3 +27,7 @@ Specifically missing (for now) is support for:
 - Reading PIs (currently ignored)
 - Reading comments (currently ignored)
 - XML version & encoding
+
+## License
+
+This project is licensed under the AGPL. See [`license.md`] for more information.

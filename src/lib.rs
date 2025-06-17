@@ -1,3 +1,18 @@
+// xml-rs XML parser
+// Copyright (C) 2025 Frederik Palmø
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #![doc = include_str!("../readme.md")]
 #![deny(unsafe_code, missing_docs)]
 #![warn(clippy::all)]
@@ -182,12 +197,25 @@ impl<'a> Xml<'a> {
     }
 }
 
-#[derive(Debug, Clone)]
-struct Tag<'a> {
-    name: &'a str,
-    attrs: HashMap<&'a str, &'a str>,
-    closing: bool,
-}
+// todo: parser span reporting
+// /// Span(line, col)
+// #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+// struct Span(usize, usize);
+// impl Span {
+//     fn new() -> Self {
+//         Self(1, 1)
+//     }
+//     fn advance(&self, s: &str) -> Self {
+//         let Span(mut line, mut col) = *self;
+//         for c in s.chars() {
+//             (line, col) = match c {
+//                 '\n' => (line + 1, 1),
+//                 _ => (line, col + 1),
+//             };
+//         }
+//         Span(line, col)
+//     }
+// }
 
 /// Parse an XML element with potential sub-elements, or text content.
 ///
@@ -246,6 +274,13 @@ fn element(src: &str) -> Result<(&str, Xml), Error> {
         children,
     };
     Ok((src, element))
+}
+
+#[derive(Debug, Clone)]
+struct Tag<'a> {
+    name: &'a str,
+    attrs: HashMap<&'a str, &'a str>,
+    closing: bool,
 }
 /// Parse a single XML tag.
 fn tag(src: &str) -> Result<(&str, Tag), Error> {
@@ -502,4 +537,17 @@ mod tests {
         assert_eq!(descendants.len(), 2);
         assert!(!descendants.iter().any(|n| n.name() == Some("root")));
     }
+
+    //     #[test]
+    //     fn span_advance() {
+    //         let span = Span::new();
+    //         let src = r#"first
+    // second
+    // third"#;
+    //         let (src, text) = eat(src, &["first"]).unwrap();
+    //         let span = span.advance(text);
+    //         assert_eq!(span, Span(1, 6));
+    //         let span = span.advance(src);
+    //         assert_eq!(span, Span(3, 6));
+    //     }
 }

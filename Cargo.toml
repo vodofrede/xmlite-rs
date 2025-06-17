@@ -3,5 +3,12 @@ name = "xmlite"
 version = "0.2.0"
 edition = "2024"
 authors = ["vodofrede"]
+description = "a light-weight, read-write XML parser."
+homepage = "https://github.com/vodofrede/xmlite-rs"
+repository = "https://github.com/vodofrede/xmlite-rs"
+readme = "readme.md"
+license-file = "license.txt"
+keywords = ["xml", "parser", "rust"]
+categories = ["parsing"]
 
 [dependencies]

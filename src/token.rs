@@ -100,7 +100,7 @@ impl<'a> Iterator for Lexer<'a> {
                 "content",
             ),
             '=' => (self.eat(&["="]).unwrap(), "eq", self.state),
-            '"' => (
+            '"' | '\'' => (
                 self.enclosed("\"").or_else(|| self.enclosed("'")).unwrap(),
                 "value",
                 self.state,

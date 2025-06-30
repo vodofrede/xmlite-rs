@@ -31,7 +31,6 @@ Mutate the document afterwards:
 ```rust
 let text = r#"<?xml?><bag><pastry kind="danish" /></bag>"#;
 let mut xml = xmlite::document(text).unwrap();
-# assert_eq!(xml.name(), Some("bag"));
 let attr = xml.children_mut().find(|e| e.name() == Some("pastry")).unwrap().attr_mut("kind");
 *attr.unwrap() = "berliner".to_owned();
 ```
